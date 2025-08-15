@@ -4,6 +4,8 @@ import { ConfigModule } from "@nestjs/config";
 import { WinstonModule } from "nest-winston";
 import * as winston from "winston";
 
+import { AuthModule } from "./api/auth/auth.module";
+import { UsersModule } from "./api/users/users.module";
 import { CommonModule } from "./common/common.mocule";
 import { ConfigService } from "./config/config.service";
 import { validateEnv } from "./config/env";
@@ -54,6 +56,8 @@ import { validateEnv } from "./config/env";
         ],
       }),
     }),
+    AuthModule,
+    UsersModule,
   ],
   controllers: [],
   providers: [],

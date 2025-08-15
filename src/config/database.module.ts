@@ -1,6 +1,8 @@
 import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
 
+import { User, UserSchema } from "src/api/users/entities/user.entitiy";
+
 import { ConfigService } from "./config.service";
 
 @Module({
@@ -12,7 +14,7 @@ import { ConfigService } from "./config.service";
       }),
       inject: [ConfigService],
     }),
-    MongooseModule.forFeature([]),
+    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
   ],
   exports: [MongooseModule],
 })

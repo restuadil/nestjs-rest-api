@@ -1,9 +1,10 @@
 import { Global, Module } from "@nestjs/common";
-import { APP_FILTER, APP_INTERCEPTOR } from "@nestjs/core";
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 
 import { ConfigService } from "src/config/config.service";
 
 import { GlobalFilter } from "./filters/global.filter";
+import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { LoggerInterceptor } from "./interceptors/logger.interceptor";
 import { MailModule } from "./mail/mail.module";
 import { MailService } from "./mail/mail.service";
@@ -22,6 +23,10 @@ import { RedisService } from "./redis/redis.service";
     {
       provide: APP_FILTER,
       useClass: GlobalFilter,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
     },
     RedisService,
     MailService,

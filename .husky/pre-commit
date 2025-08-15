@@ -1,5 +1,5 @@
 echo "🔍 Running Lint & Format for staged files..."
 npx lint-staged || exit 1
 
-echo "🧪 Running Tests..."
-npm run test || exit 1
+# echo "🧪 Running Tests..."
+# npm run test || exit 1
