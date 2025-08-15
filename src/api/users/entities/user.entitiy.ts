@@ -11,6 +11,7 @@ import { Role } from "src/types/role.type";
   toJSON: {
     transform: (doc, ret: Record<string, unknown>) => {
       delete ret.password;
+      delete ret.__v;
       return ret;
     },
   },
