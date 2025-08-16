@@ -17,6 +17,10 @@ export class Category {
 
   @Prop({ unique: true, required: true, type: String })
   slug: string;
+
+  // for queryschema
+  readonly createdAt?: Date;
+  readonly updatedAt?: Date;
 }
 
 export const CategorySchema = SchemaFactory.createForClass(Category);
