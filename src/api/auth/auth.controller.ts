@@ -1,8 +1,116 @@
-import { Controller } from "@nestjs/common";
+import { Body, Controller, Get, Inject, Post, Query, Res, UsePipes } from "@nestjs/common";
+
+import { Response } from "express";
+import { WINSTON_MODULE_PROVIDER } from "nest-winston";
+import { Logger } from "winston";
+
+import { Cookie } from "src/common/decortators/cookie.decorator";
+import { Me } from "src/common/decortators/me.decorator";
+import { Public } from "src/common/decortators/public.decorator";
+import { ZodPipe } from "src/common/pipe/zod.pipe";
+import { JwtPayload } from "src/types/jwt.type";
+import { ControllerResponse } from "src/types/web.type";
 
 import { AuthService } from "./auth.service";
+import { ActivateDto, activateSchema } from "./dto/auth-activate.dto";
+import { LoginDto, loginSchema } from "./dto/auth-login.dto";
+import { RegisterDto, registerSchema } from "./dto/auth-register.dto";
+import { User } from "../users/entities/user.entitiy";
 
 @Controller("auth")
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
+    private readonly authService: AuthService,
+  ) {}
+
+  @Post("register")
+  @Public()
+  @UsePipes(new ZodPipe(registerSchema))
+  async register(@Body() registerDto: RegisterDto): Promise<ControllerResponse<User>> {
+    this.logger.info(`Auth Controller - register`);
+
+    const result = await this.authService.register(registerDto);
+
+    return { message: "User registered successfully", data: result };
+  }
+
+  @Post("login")
+  @Public()
+  @UsePipes(new ZodPipe(loginSchema))
+  async login(
+    @Body() loginDto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<ControllerResponse<{ accessToken: string }>> {
+    this.logger.info(`Auth Controller - login`);
+
+    const { accessToken, refreshToken } = await this.authService.login(loginDto);
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+    });
+
+    return { message: "User logged in successfully", data: { accessToken } };
+  }
+
+  @Get("activation")
+  @Public()
+  @UsePipes(new ZodPipe(activateSchema))
+  async activate(@Query() activateDto: ActivateDto): Promise<ControllerResponse<User>> {
+    this.logger.info(`Auth Controller - activate`);
+
+    const result = await this.authService.activate(activateDto);
+
+    return { message: "User activated successfully", data: result };
+  }
+
+  @Get("me")
+  async me(@Me() me: JwtPayload): Promise<ControllerResponse<User>> {
+    this.logger.info(`Auth Controller - me`);
+
+    const result = await this.authService.me(me);
+
+    return { message: "User fetched successfully", data: result };
+  }
+
+  @Get("refresh")
+  @Public()
+  async refresh(
+    @Cookie("refreshToken") refreshToken: string,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<ControllerResponse<{ accessToken: string }>> {
+    this.logger.info(`Auth Controller - refresh`);
+
+    const { accessToken, refreshToken: newRefreshToken } =
+      await this.authService.refresh(refreshToken);
+
+    res.cookie("refreshToken", newRefreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+    });
+
+    return {
+      message: "Token refreshed successfully",
+      data: {
+        accessToken,
+      },
+    };
+  }
+
+  @Post("logout")
+  @Public()
+  async logout(
+    @Cookie("refreshToken") refreshToken: string,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<ControllerResponse<void>> {
+    this.logger.info(`Auth Controller - logout`);
+
+    await this.authService.logout(refreshToken);
+
+    res.clearCookie("refreshToken");
+    return { message: "User logged out successfully", data: null };
+  }
 }

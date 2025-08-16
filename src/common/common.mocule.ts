@@ -2,6 +2,7 @@ import { Global, Module } from "@nestjs/common";
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 
 import { ConfigService } from "src/config/config.service";
+import { DatabaseModule } from "src/config/database.module";
 
 import { GlobalFilter } from "./filters/global.filter";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
@@ -13,7 +14,7 @@ import { RedisService } from "./redis/redis.service";
 
 @Global()
 @Module({
-  imports: [RedisModule, MailModule],
+  imports: [RedisModule, MailModule, DatabaseModule],
   providers: [
     ConfigService,
     {

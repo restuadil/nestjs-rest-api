@@ -6,10 +6,10 @@ import { Request, Response } from "express";
 import { MongooseError } from "mongoose";
 import { ZodError } from "zod";
 
-@Catch(HttpException, ZodError, MongooseError, TokenExpiredError)
+@Catch(HttpException, ZodError, MongooseError, TokenExpiredError, JsonWebTokenError)
 export class GlobalFilter implements ExceptionFilter {
   catch(
-    exception: HttpException | ZodError | MongooseError | TokenExpiredError,
+    exception: HttpException | ZodError | MongooseError | TokenExpiredError | JsonWebTokenError,
     host: ArgumentsHost,
   ) {
     const ctx = host.switchToHttp();
