@@ -35,14 +35,14 @@ export class AuthService {
     private readonly configService: ConfigService,
   ) {}
 
-  async existingUsernameOrEmail(username: string, email: string): Promise<User | null> {
+  private async existingUsernameOrEmail(username: string, email: string): Promise<User | null> {
     const existingUsernameOrEmail = await this.userModel.find({
       $or: [{ username }, { email }],
     });
     return existingUsernameOrEmail.length ? existingUsernameOrEmail[0] : null;
   }
 
-  async generateTokens(payload: JwtPayload) {
+  private async generateTokens(payload: JwtPayload) {
     const accessToken = this.jwtService.sign(payload, {
       expiresIn: this.configService.get<number>("JWT_ACCESS_EXPIRATION_TIME"),
     });
@@ -57,6 +57,7 @@ export class AuthService {
     );
     return { accessToken, refreshToken };
   }
+
   async register(registerDto: RegisterDto): Promise<User> {
     this.logger.info(`Registering user...`);
 
@@ -87,6 +88,7 @@ export class AuthService {
     });
     return user;
   }
+
   async login(loginDto: LoginDto): Promise<{ accessToken: string; refreshToken: string }> {
     this.logger.info(`Logging  user...`);
 
