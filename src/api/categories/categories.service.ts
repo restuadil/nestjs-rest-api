@@ -129,4 +129,15 @@ export class CategoriesService {
 
     return updatedCategory;
   }
+
+  async remove(id: Types.ObjectId): Promise<Category> {
+    this.logger.info(`Deleting category...`);
+
+    const deletedCategory = await this.categoryModel.findByIdAndDelete(id);
+    if (!deletedCategory) throw new NotFoundException("Category not found");
+
+    await this.redisService.deleteByPattern("category:*");
+
+    return deletedCategory;
+  }
 }

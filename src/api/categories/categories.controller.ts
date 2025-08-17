@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Param, Post, Put, Query, UsePipes } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Inject, Param, Post, Put, Query } from "@nestjs/common";
 
 import { Types } from "mongoose";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
@@ -12,7 +12,7 @@ import { Role } from "src/types/role.type";
 import { ControllerResponse } from "src/types/web.type";
 
 import { CategoriesService } from "./categories.service";
-import { CreateCategoryDto } from "./dto/create-category.dto";
+import { CreateCategoryDto, createCategorySchema } from "./dto/create-category.dto";
 import { QueryCategoryDto, queryCategorySchema } from "./dto/query-category.dto";
 import { UpdateCategoryDto, updateCategorySchema } from "./dto/update-category.dto";
 import { Category } from "./entities/category.entity";
@@ -27,7 +27,7 @@ export class CategoriesController {
   @Roles(Role.ADMIN)
   @Post()
   async create(
-    @Body() createCategoryDto: CreateCategoryDto,
+    @Body(new ZodPipe(createCategorySchema)) createCategoryDto: CreateCategoryDto,
   ): Promise<ControllerResponse<Category>> {
     this.logger.info(`Categories Controller - create`);
 
@@ -38,9 +38,8 @@ export class CategoriesController {
 
   @Get()
   @Public()
-  @UsePipes(new ZodPipe(queryCategorySchema))
   async findAll(
-    @Query() queryCategoryDto: QueryCategoryDto,
+    @Query(new ZodPipe(queryCategorySchema)) queryCategoryDto: QueryCategoryDto,
   ): Promise<ControllerResponse<Category[]>> {
     this.logger.info(`Categories Controller - findAll`);
 
@@ -50,8 +49,9 @@ export class CategoriesController {
   }
 
   @Get(":id")
-  @UsePipes(new ZodPipe(idParamSchema))
-  async findOne(@Param("id") id: Types.ObjectId): Promise<ControllerResponse<Category>> {
+  async findOne(
+    @Param(new ZodPipe(idParamSchema)) id: Types.ObjectId,
+  ): Promise<ControllerResponse<Category>> {
     this.logger.info(`Categories Controller - findOne`);
 
     const result = await this.categoriesService.findOne(new Types.ObjectId(id));
@@ -60,6 +60,7 @@ export class CategoriesController {
   }
 
   @Put(":id")
+  @Roles(Role.ADMIN)
   async update(
     @Param(new ZodPipe(idParamSchema)) id: Types.ObjectId,
     @Body(new ZodPipe(updateCategorySchema)) updateCategoryDto: UpdateCategoryDto,
@@ -69,5 +70,17 @@ export class CategoriesController {
     const result = await this.categoriesService.update(new Types.ObjectId(id), updateCategoryDto);
 
     return { message: "Category updated successfully", data: result };
+  }
+
+  @Delete(":id")
+  @Roles(Role.ADMIN)
+  async remove(
+    @Param(new ZodPipe(idParamSchema)) id: Types.ObjectId,
+  ): Promise<ControllerResponse<Category>> {
+    this.logger.info(`Categories Controller - remove`);
+
+    const result = await this.categoriesService.remove(new Types.ObjectId(id));
+
+    return { message: "Category deleted successfully", data: result };
   }
 }
