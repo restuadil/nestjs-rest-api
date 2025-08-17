@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Param, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, Inject, Param, Post, Put, Query } from "@nestjs/common";
 
 import { Types } from "mongoose";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
@@ -57,5 +57,18 @@ export class BrandsController {
     const { data, meta } = await this.brandsService.findAll(queryBrandDto);
 
     return { message: "Brands fetched successfully", data: data, meta: meta };
+  }
+
+  @Put(":id")
+  @Roles(Role.ADMIN)
+  async update(
+    @Param(new ZodPipe(idParamSchema)) id: Types.ObjectId,
+    @Body(new ZodPipe(createBrandSchema)) updateBrandDto: CreateBrandDto,
+  ): Promise<ControllerResponse<Brand>> {
+    this.logger.info(`Brands Controller - update`);
+
+    const result = await this.brandsService.update(new Types.ObjectId(id), updateBrandDto);
+
+    return { message: "Brand updated successfully", data: result };
   }
 }

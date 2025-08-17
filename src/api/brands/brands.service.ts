@@ -101,4 +101,25 @@ export class BrandsService {
 
     return { data, meta };
   }
+
+  async update(id: Types.ObjectId, updateBrandDto: CreateBrandDto): Promise<Brand> {
+    this.logger.info(`Updating brand...`);
+
+    const { name } = updateBrandDto;
+    const slug = generateSlug(name);
+
+    const existingBrandNameOrSlug = await this.getBrandByNameOrSlug(name, slug);
+    if (
+      existingBrandNameOrSlug &&
+      (existingBrandNameOrSlug._id as Types.ObjectId).toString() !== id.toString()
+    )
+      throw new ConflictException("Brand already exists");
+
+    const updatedBrand = await this.brandModel.findByIdAndUpdate(id, { name, slug }, { new: true });
+    if (!updatedBrand) throw new InternalServerErrorException("Failed to update brand");
+
+    await this.redisService.deleteByPattern("brand:*");
+
+    return updatedBrand;
+  }
 }
