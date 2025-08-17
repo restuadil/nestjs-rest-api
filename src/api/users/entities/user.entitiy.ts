@@ -37,6 +37,10 @@ export class User extends Document {
 
   @Prop({ type: Types.ObjectId, required: false, ref: "Profile" })
   profile?: Types.ObjectId;
+
+  // for queryschema
+  readonly createdAt?: Date;
+  readonly updatedAt?: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
