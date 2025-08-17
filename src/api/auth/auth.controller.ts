@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Post, Query, Res, UsePipes } from "@nestjs/common";
+import { Body, Controller, Get, Inject, Post, Query, Res } from "@nestjs/common";
 
 import { Response } from "express";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
@@ -26,8 +26,9 @@ export class AuthController {
 
   @Post("register")
   @Public()
-  @UsePipes(new ZodPipe(registerSchema))
-  async register(@Body() registerDto: RegisterDto): Promise<ControllerResponse<User>> {
+  async register(
+    @Body(new ZodPipe(registerSchema)) registerDto: RegisterDto,
+  ): Promise<ControllerResponse<User>> {
     this.logger.info(`Auth Controller - register`);
 
     const result = await this.authService.register(registerDto);
@@ -37,9 +38,8 @@ export class AuthController {
 
   @Post("login")
   @Public()
-  @UsePipes(new ZodPipe(loginSchema))
   async login(
-    @Body() loginDto: LoginDto,
+    @Body(new ZodPipe(loginSchema)) loginDto: LoginDto,
     @Res({ passthrough: true }) res: Response,
   ): Promise<ControllerResponse<{ accessToken: string }>> {
     this.logger.info(`Auth Controller - login`);
@@ -57,8 +57,9 @@ export class AuthController {
 
   @Get("activation")
   @Public()
-  @UsePipes(new ZodPipe(activateSchema))
-  async activate(@Query() activateDto: ActivateDto): Promise<ControllerResponse<User>> {
+  async activate(
+    @Query(new ZodPipe(activateSchema)) activateDto: ActivateDto,
+  ): Promise<ControllerResponse<User>> {
     this.logger.info(`Auth Controller - activate`);
 
     const result = await this.authService.activate(activateDto);
