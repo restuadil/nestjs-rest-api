@@ -4,6 +4,7 @@ import { Types } from "mongoose";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 import { Logger } from "winston";
 
+import { Public } from "src/common/decortators/public.decorator";
 import { ZodPipe } from "src/common/pipe/zod.pipe";
 import { ControllerResponse } from "src/types/web.type";
 
@@ -17,6 +18,7 @@ export class UsersController {
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
     private readonly usersService: UsersService,
   ) {}
+
   @Get(":id")
   async findOne(@Param("id") id: Types.ObjectId): Promise<ControllerResponse<User>> {
     this.logger.info(`Users Controller - findOne`);
@@ -26,6 +28,7 @@ export class UsersController {
   }
 
   @Get()
+  @Public()
   @UsePipes(new ZodPipe(queryUserSchema))
   async findAll(@Query() queryUserDto: QueryUserDto): Promise<ControllerResponse<User[]>> {
     this.logger.info(`Users Controller - findAll`);
