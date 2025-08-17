@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Param, Post, Query, UsePipes } from "@nestjs/common";
+import { Body, Controller, Get, Inject, Param, Post, Put, Query, UsePipes } from "@nestjs/common";
 
 import { Types } from "mongoose";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
@@ -14,6 +14,7 @@ import { ControllerResponse } from "src/types/web.type";
 import { CategoriesService } from "./categories.service";
 import { CreateCategoryDto } from "./dto/create-category.dto";
 import { QueryCategoryDto, queryCategorySchema } from "./dto/query-category.dto";
+import { UpdateCategoryDto, updateCategorySchema } from "./dto/update-category.dto";
 import { Category } from "./entities/category.entity";
 
 @Controller("categories")
@@ -56,5 +57,17 @@ export class CategoriesController {
     const result = await this.categoriesService.findOne(new Types.ObjectId(id));
 
     return { message: "Category fetched successfully", data: result };
+  }
+
+  @Put(":id")
+  async update(
+    @Param(new ZodPipe(idParamSchema)) id: Types.ObjectId,
+    @Body(new ZodPipe(updateCategorySchema)) updateCategoryDto: UpdateCategoryDto,
+  ): Promise<ControllerResponse<Category>> {
+    this.logger.info(`Categories Controller - update`);
+
+    const result = await this.categoriesService.update(new Types.ObjectId(id), updateCategoryDto);
+
+    return { message: "Category updated successfully", data: result };
   }
 }
