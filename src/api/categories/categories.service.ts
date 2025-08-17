@@ -1,7 +1,7 @@
-import { ConflictException, Inject, Injectable } from "@nestjs/common";
+import { ConflictException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 
-import { FilterQuery, Model } from "mongoose";
+import { FilterQuery, Model, Types } from "mongoose";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 import { Logger } from "winston";
 
@@ -90,5 +90,14 @@ export class CategoriesService {
       data,
       meta,
     };
+  }
+
+  async findOne(id: Types.ObjectId): Promise<Category> {
+    this.logger.info(`Get category by id...`);
+
+    const category = await this.categoryModel.findById(id).lean().exec();
+    if (!category) throw new NotFoundException("Category not found");
+
+    return category;
   }
 }

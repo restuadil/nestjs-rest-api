@@ -1,9 +1,12 @@
-import { Body, Controller, Get, Inject, Post, Query, UsePipes } from "@nestjs/common";
+import { Body, Controller, Get, Inject, Param, Post, Query, UsePipes } from "@nestjs/common";
 
+import { Types } from "mongoose";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 import { Logger } from "winston";
 
+import { Public } from "src/common/decortators/public.decorator";
 import { Roles } from "src/common/decortators/roles.decorator";
+import { idParamSchema } from "src/common/helpers/idparam.dto";
 import { ZodPipe } from "src/common/pipe/zod.pipe";
 import { Role } from "src/types/role.type";
 import { ControllerResponse } from "src/types/web.type";
@@ -33,6 +36,7 @@ export class CategoriesController {
   }
 
   @Get()
+  @Public()
   @UsePipes(new ZodPipe(queryCategorySchema))
   async findAll(
     @Query() queryCategoryDto: QueryCategoryDto,
@@ -42,5 +46,15 @@ export class CategoriesController {
     const { data, meta } = await this.categoriesService.findAll(queryCategoryDto);
 
     return { message: "Categories fetched successfully", data: data, meta: meta };
+  }
+
+  @Get(":id")
+  @UsePipes(new ZodPipe(idParamSchema))
+  async findOne(@Param("id") id: Types.ObjectId): Promise<ControllerResponse<Category>> {
+    this.logger.info(`Categories Controller - findOne`);
+
+    const result = await this.categoriesService.findOne(new Types.ObjectId(id));
+
+    return { message: "Category fetched successfully", data: result };
   }
 }
