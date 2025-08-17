@@ -1,10 +1,11 @@
-import { Controller, Get, Inject, Param, Query, UsePipes } from "@nestjs/common";
+import { Controller, Get, Inject, Param, Query } from "@nestjs/common";
 
 import { Types } from "mongoose";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 import { Logger } from "winston";
 
 import { Public } from "src/common/decortators/public.decorator";
+import { idParamSchema } from "src/common/helpers/idparam.dto";
 import { ZodPipe } from "src/common/pipe/zod.pipe";
 import { ControllerResponse } from "src/types/web.type";
 
@@ -20,7 +21,10 @@ export class UsersController {
   ) {}
 
   @Get(":id")
-  async findOne(@Param("id") id: Types.ObjectId): Promise<ControllerResponse<User>> {
+  @Public()
+  async findOne(
+    @Param(new ZodPipe(idParamSchema)) id: Types.ObjectId,
+  ): Promise<ControllerResponse<User>> {
     this.logger.info(`Users Controller - findOne`);
     const result = await this.usersService.findOne(new Types.ObjectId(id));
 
@@ -29,8 +33,9 @@ export class UsersController {
 
   @Get()
   @Public()
-  @UsePipes(new ZodPipe(queryUserSchema))
-  async findAll(@Query() queryUserDto: QueryUserDto): Promise<ControllerResponse<User[]>> {
+  async findAll(
+    @Query(new ZodPipe(queryUserSchema)) queryUserDto: QueryUserDto,
+  ): Promise<ControllerResponse<User[]>> {
     this.logger.info(`Users Controller - findAll`);
 
     const { data, meta } = await this.usersService.findAll(queryUserDto);
