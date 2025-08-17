@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
 
+import { Brand, BrandSchema } from "src/api/brands/entities/brand.entity";
 import { Category, CategorySchema } from "src/api/categories/entities/category.entity";
 import { User, UserSchema } from "src/api/users/entities/user.entitiy";
 
@@ -18,6 +19,7 @@ import { ConfigService } from "./config.service";
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
       { name: Category.name, schema: CategorySchema },
+      { name: Brand.name, schema: BrandSchema },
     ]),
   ],
   exports: [MongooseModule],
