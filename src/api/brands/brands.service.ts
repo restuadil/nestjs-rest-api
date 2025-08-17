@@ -105,6 +105,7 @@ export class BrandsService {
   async update(id: Types.ObjectId, updateBrandDto: CreateBrandDto): Promise<Brand> {
     this.logger.info(`Updating brand...`);
 
+    await this.findOne(id);
     const { name } = updateBrandDto;
     const slug = generateSlug(name);
 
@@ -121,5 +122,16 @@ export class BrandsService {
     await this.redisService.deleteByPattern("brand:*");
 
     return updatedBrand;
+  }
+
+  async remove(id: Types.ObjectId): Promise<Brand> {
+    this.logger.info(`Deleting brand...`);
+
+    const deletedBrand = await this.brandModel.findByIdAndDelete(id);
+    if (!deletedBrand) throw new NotFoundException("Brand not found");
+
+    await this.redisService.deleteByPattern("brand:*");
+
+    return deletedBrand;
   }
 }
