@@ -10,7 +10,7 @@ import { ControllerResponse } from "src/types/web.type";
 
 import { CategoriesService } from "./categories.service";
 import { CreateCategoryDto } from "./dto/create-category.dto";
-import { QueryCategoryDto, QueryCategorySchema } from "./dto/query-category.dto";
+import { QueryCategoryDto, queryCategorySchema } from "./dto/query-category.dto";
 import { Category } from "./entities/category.entity";
 
 @Controller("categories")
@@ -33,7 +33,7 @@ export class CategoriesController {
   }
 
   @Get()
-  @UsePipes(new ZodPipe(QueryCategorySchema))
+  @UsePipes(new ZodPipe(queryCategorySchema))
   async findAll(
     @Query() queryCategoryDto: QueryCategoryDto,
   ): Promise<ControllerResponse<Category[]>> {
