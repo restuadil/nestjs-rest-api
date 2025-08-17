@@ -3,10 +3,11 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 
-import { Model } from "mongoose";
+import { Model, Types } from "mongoose";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 import { Logger } from "winston";
 
@@ -47,5 +48,14 @@ export class BrandsService {
     await this.redisService.deleteByPattern("brand:*");
 
     return newBrand;
+  }
+
+  async findOne(id: Types.ObjectId): Promise<Brand> {
+    this.logger.info(`Get brand by id...`);
+
+    const brand = await this.brandModel.findById(id).lean().exec();
+    if (!brand) throw new NotFoundException("Brand not found");
+
+    return brand;
   }
 }

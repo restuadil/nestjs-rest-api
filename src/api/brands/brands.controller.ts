@@ -1,9 +1,11 @@
-import { Body, Controller, Inject, Post } from "@nestjs/common";
+import { Body, Controller, Get, Inject, Param, Post } from "@nestjs/common";
 
+import { Types } from "mongoose";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 import { Logger } from "winston";
 
 import { Roles } from "src/common/decortators/roles.decorator";
+import { idParamSchema } from "src/common/helpers/idparam.dto";
 import { ZodPipe } from "src/common/pipe/zod.pipe";
 import { Role } from "src/types/role.type";
 import { ControllerResponse } from "src/types/web.type";
@@ -30,5 +32,16 @@ export class BrandsController {
     const result = await this.brandsService.create(createBrandDto);
 
     return { message: "Brand created successfully", data: result };
+  }
+
+  @Get(":id")
+  async findOne(
+    @Param(new ZodPipe(idParamSchema)) id: Types.ObjectId,
+  ): Promise<ControllerResponse<Brand>> {
+    this.logger.info(`Brands Controller - findOne`);
+
+    const result = await this.brandsService.findOne(new Types.ObjectId(id));
+
+    return { message: "Brand fetched successfully", data: result };
   }
 }
