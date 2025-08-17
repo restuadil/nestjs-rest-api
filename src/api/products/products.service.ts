@@ -15,7 +15,8 @@ import { RedisService } from "src/common/redis/redis.service";
 import { ConfigService } from "src/config/config.service";
 
 import { CreateProductDto } from "./dto/create-product.dto";
-import { Product, ProductVariant } from "./entities/product.entities";
+import { ProductVariant } from "./entities/product-variant.entity";
+import { Product } from "./entities/product.entity";
 
 @Injectable()
 export class ProductsService {
@@ -30,24 +31,36 @@ export class ProductsService {
   private async getProductByNameOrSlug(name: string, slug: string): Promise<Product | null> {
     return await this.productModel.findOne({ $or: [{ name }, { slug: slug }] });
   }
-  async create(createProductDto: CreateProductDto): Promise<Product> {
-    this.logger.info(`Creaing Producct....`);
 
-    const { name, ...rest } = createProductDto;
+  async create(createProductDto: CreateProductDto): Promise<Product> {
+    this.logger.info(`Creating product...`);
+
+    const { name, brand, category, description, image, variants } = createProductDto;
     const slug = generateSlug(name);
 
     const existingProductNameOrSlug = await this.getProductByNameOrSlug(name, slug);
     if (existingProductNameOrSlug) throw new ConflictException("Product already exists");
 
-    const product = await this.productModel.create({
+    const variantsProduct = await Promise.all(
+      variants.map((variant) => this.productVariantModel.create(variant)),
+    );
+    if (!variantsProduct)
+      throw new InternalServerErrorException("Failed to create product variant");
+
+    const variantProductIds = variantsProduct.map((variant) => variant._id);
+    const Product = await this.productModel.create({
       name,
       slug,
-      ...rest,
+      description,
+      image,
+      brandId: brand,
+      categoryIds: category,
+      variantIds: variantProductIds,
     });
-    if (!product) throw new InternalServerErrorException("Failed to create product");
+    if (!Product) throw new InternalServerErrorException("Failed to create product");
 
     await this.redisService.deleteByPattern("product:*");
 
-    return product;
+    return Product;
   }
 }

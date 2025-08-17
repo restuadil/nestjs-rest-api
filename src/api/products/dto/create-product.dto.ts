@@ -14,14 +14,20 @@ export const createProductSchema = z.object({
     }),
   ),
   category: z.array(
-    z.string().refine((val) => Types.ObjectId.isValid(val), {
-      message: "Invalid ObjectId",
-    }),
+    z
+      .string()
+      .refine((val) => Types.ObjectId.isValid(val), {
+        message: "Invalid ObjectId",
+      })
+      .transform((val) => new Types.ObjectId(val)),
   ),
-  brand: z.string().refine((val) => Types.ObjectId.isValid(val), {
-    message: "Invalid ObjectId",
-  }),
-  image: z.url().optional(),
+  brand: z
+    .string()
+    .refine((val) => Types.ObjectId.isValid(val), {
+      message: "Invalid ObjectId",
+    })
+    .transform((val) => new Types.ObjectId(val)),
+  image: z.url(),
 });
 
 export type CreateProductDto = z.infer<typeof createProductSchema>;
