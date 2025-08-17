@@ -7,15 +7,18 @@ import {
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 
-import { Model, Types } from "mongoose";
+import { FilterQuery, Model, Types } from "mongoose";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 import { Logger } from "winston";
 
+import { generateMeta } from "src/common/helpers/generate-meta";
 import { generateSlug } from "src/common/helpers/generate-slug";
 import { RedisService } from "src/common/redis/redis.service";
 import { ConfigService } from "src/config/config.service";
+import { Meta, PaginationResponse } from "src/types/web.type";
 
 import { CreateBrandDto } from "./dto/create-brand.dto";
+import { QueryBrandDto } from "./dto/query-brand.dto";
 import { Brand } from "./entities/brand.entity";
 
 @Injectable()
@@ -57,5 +60,45 @@ export class BrandsService {
     if (!brand) throw new NotFoundException("Brand not found");
 
     return brand;
+  }
+
+  async findAll(queryBrandDto: QueryBrandDto): Promise<PaginationResponse<Brand>> {
+    this.logger.info(`Get all brands...`);
+
+    const brandsCache = await this.redisService.get<PaginationResponse<Brand>>(
+      `brand:${JSON.stringify(queryBrandDto)}`,
+    );
+    if (brandsCache) return brandsCache;
+
+    const { limit, order, page, search, sort } = queryBrandDto;
+    const queryObject: FilterQuery<Brand> = {};
+
+    if (search && search.length > 0) {
+      queryObject.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { slug: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const [data, total] = await Promise.all([
+      this.brandModel
+        .find(queryObject)
+        .sort({ [sort]: order })
+        .limit(limit)
+        .skip((page - 1) * limit)
+        .lean()
+        .exec(),
+      this.brandModel.countDocuments(queryObject).exec(),
+    ]);
+
+    const meta: Meta = generateMeta(page, limit, Number(total));
+
+    await this.redisService.set(
+      `brand:${JSON.stringify(queryBrandDto)}`,
+      { data, meta },
+      this.configService.get("REDIS_TTL"),
+    );
+
+    return { data, meta };
   }
 }
