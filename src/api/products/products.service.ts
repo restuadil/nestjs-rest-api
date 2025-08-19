@@ -166,4 +166,18 @@ export class ProductsService {
     if (!product) throw new NotFoundException("Product not found");
     return product;
   }
+
+  // TODO implement update
+  async update() {}
+
+  async remove(id: Types.ObjectId): Promise<Product> {
+    this.logger.info(`Deleting product...`);
+
+    const deletedProduct = await this.productModel.findByIdAndDelete(id);
+    if (!deletedProduct) throw new NotFoundException("Product not found");
+
+    await this.redisService.deleteByPattern("product:*");
+
+    return deletedProduct;
+  }
 }

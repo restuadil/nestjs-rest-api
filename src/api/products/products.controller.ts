@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Param, Post, Query } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Inject, Param, Post, Query } from "@nestjs/common";
 
 import { Types } from "mongoose";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
@@ -57,5 +57,19 @@ export class ProductsController {
     const result = await this.productsService.findOne(new Types.ObjectId(id));
 
     return { message: "Product fetched successfully", data: result };
+  }
+
+  // TODO implement update
+
+  @Delete(":id")
+  @Roles(Role.ADMIN)
+  async remove(
+    @Param(new ZodPipe(idParamSchema)) id: Types.ObjectId,
+  ): Promise<ControllerResponse<Product>> {
+    this.logger.info(`Products Controller - remove`);
+
+    const result = await this.productsService.remove(new Types.ObjectId(id));
+
+    return { message: "Product deleted successfully", data: result };
   }
 }
