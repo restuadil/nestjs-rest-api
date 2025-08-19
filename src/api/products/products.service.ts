@@ -3,10 +3,11 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 
-import { FilterQuery, Model } from "mongoose";
+import { FilterQuery, Model, Types } from "mongoose";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 import { Logger } from "winston";
 
@@ -140,5 +141,32 @@ export class ProductsService {
       data,
       meta,
     };
+  }
+
+  async findOne(id: Types.ObjectId): Promise<Product> {
+    this.logger.info(`Getting product...`);
+
+    const product = await this.productModel
+      .findById(id)
+      .populate([
+        {
+          path: "categoryIds",
+          model: "Category",
+          select: "name",
+        },
+        {
+          path: "brandId",
+          model: "Brand",
+          select: "name",
+        },
+        {
+          path: "variantIds",
+          model: "ProductVariant",
+          select: "-createdAt -updatedAt",
+        },
+      ])
+      .exec();
+    if (!product) throw new NotFoundException("Product not found");
+    return product;
   }
 }
