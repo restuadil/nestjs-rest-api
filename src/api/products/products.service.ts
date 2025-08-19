@@ -151,17 +151,14 @@ export class ProductsService {
       .populate([
         {
           path: "categoryIds",
-          model: "Category",
           select: "name",
         },
         {
           path: "brandId",
-          model: "Brand",
           select: "name",
         },
         {
           path: "variantIds",
-          model: "ProductVariant",
           select: "-createdAt -updatedAt",
         },
       ])
