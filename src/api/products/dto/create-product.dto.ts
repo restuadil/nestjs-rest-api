@@ -6,11 +6,11 @@ export const createProductSchema = z.object({
   description: z.string().min(3).trim(),
   variants: z.array(
     z.object({
-      color: z.string().min(3).trim(),
+      color: z.string().trim(),
       price: z.number(),
       quantity: z.number(),
       image: z.url().optional(),
-      size: z.string().min(3).trim(),
+      size: z.string().trim(),
     }),
   ),
   category: z.array(

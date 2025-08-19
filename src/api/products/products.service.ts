@@ -6,15 +6,18 @@ import {
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 
-import { Model } from "mongoose";
+import { FilterQuery, Model } from "mongoose";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 import { Logger } from "winston";
 
+import { generateMeta } from "src/common/helpers/generate-meta";
 import { generateSlug } from "src/common/helpers/generate-slug";
 import { RedisService } from "src/common/redis/redis.service";
 import { ConfigService } from "src/config/config.service";
+import { Meta, PaginationResponse } from "src/types/web.type";
 
 import { CreateProductDto } from "./dto/create-product.dto";
+import { QueryProductDto, QueryResponseProduct } from "./dto/query-product.dto";
 import { ProductVariant } from "./entities/product-variant.entity";
 import { Product } from "./entities/product.entity";
 
@@ -62,5 +65,80 @@ export class ProductsService {
     await this.redisService.deleteByPattern("product:*");
 
     return Product;
+  }
+
+  async findAll(
+    queryProductDto: QueryProductDto,
+  ): Promise<PaginationResponse<QueryResponseProduct>> {
+    this.logger.info(`Getting all products...`);
+
+    const productsCache = await this.redisService.get<PaginationResponse<QueryResponseProduct>>(
+      `product:${JSON.stringify(queryProductDto)}`,
+    );
+    if (productsCache) return productsCache;
+
+    const { limit, order, page, search, sort, brandId, categoryId } = queryProductDto;
+    const queryObject: FilterQuery<Product> = {};
+
+    if (search) {
+      queryObject.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { slug: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    if (brandId) queryObject.brandId = brandId;
+    if (categoryId) queryObject.categoryIds = categoryId;
+
+    const [data, total] = await Promise.all([
+      this.productModel
+        .aggregate<QueryResponseProduct>([
+          { $match: queryObject },
+          {
+            $lookup: {
+              from: "product_variants",
+              localField: "variantIds",
+              foreignField: "_id",
+              as: "variants",
+            },
+          },
+          {
+            $addFields: {
+              totalQuantity: { $sum: "$variants.quantity" },
+              minPrice: { $min: "$variants.price" },
+              maxPrice: { $max: "$variants.price" },
+            },
+          },
+          {
+            $project: {
+              variants: 0,
+            },
+          },
+          {
+            $sort: { [sort]: order === "asc" ? 1 : -1 },
+          },
+          {
+            $skip: (page - 1) * limit,
+          },
+          {
+            $limit: limit,
+          },
+        ])
+        .exec(),
+      this.productModel.countDocuments(queryObject).exec(),
+    ]);
+
+    const meta: Meta = generateMeta(page, limit, Number(total));
+
+    await this.redisService.set(
+      `product:${JSON.stringify(queryProductDto)}`,
+      { data, meta },
+      this.configService.get("REDIS_TTL"),
+    );
+
+    return {
+      data,
+      meta,
+    };
   }
 }
