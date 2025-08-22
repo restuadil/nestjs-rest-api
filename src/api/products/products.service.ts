@@ -19,6 +19,7 @@ import { Meta, PaginationResponse } from "src/types/web.type";
 
 import { CreateProductDto } from "./dto/create-product.dto";
 import { QueryProductDto, QueryResponseProduct } from "./dto/query-product.dto";
+import { UpdateProductDto } from "./dto/update-product.dto";
 import { ProductVariant } from "./entities/product-variant.entity";
 import { Product } from "./entities/product.entity";
 
@@ -168,7 +169,19 @@ export class ProductsService {
   }
 
   // TODO implement update
-  async update() {}
+  async update(id: Types.ObjectId, updateProductDto: UpdateProductDto): Promise<Product> {
+    this.logger.info(`Updating product...`);
+
+    await this.findOne(id);
+    const updatedProduct = await this.productModel.findByIdAndUpdate(id, updateProductDto, {
+      new: true,
+    });
+    if (!updatedProduct) throw new InternalServerErrorException("Failed to update product");
+
+    await this.redisService.deleteByPattern("product:*");
+
+    return updatedProduct;
+  }
 
   async remove(id: Types.ObjectId): Promise<Product> {
     this.logger.info(`Deleting product...`);

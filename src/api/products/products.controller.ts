@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Inject, Param, Post, Query } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Inject, Param, Post, Put, Query } from "@nestjs/common";
 
 import { Types } from "mongoose";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
@@ -13,6 +13,7 @@ import { ControllerResponse } from "src/types/web.type";
 
 import { CreateProductDto, createProductSchema } from "./dto/create-product.dto";
 import { QueryProductDto, queryProductSchema } from "./dto/query-product.dto";
+import { UpdateProductDto } from "./dto/update-product.dto";
 import { Product } from "./entities/product.entity";
 import { ProductsService } from "./products.service";
 
@@ -60,6 +61,19 @@ export class ProductsController {
   }
 
   // TODO implement update
+  // only can update name and description
+  @Put(":id")
+  @Roles(Role.ADMIN)
+  async update(
+    @Param(new ZodPipe(idParamSchema)) id: Types.ObjectId,
+    @Body() updateProductDto: UpdateProductDto,
+  ): Promise<ControllerResponse<Product>> {
+    this.logger.info(`Products Controller - update`);
+
+    const result = await this.productsService.update(new Types.ObjectId(id), updateProductDto);
+
+    return { message: "Product updated successfully", data: result };
+  }
 
   @Delete(":id")
   @Roles(Role.ADMIN)
