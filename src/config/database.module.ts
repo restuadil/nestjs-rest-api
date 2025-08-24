@@ -3,6 +3,11 @@ import { MongooseModule } from "@nestjs/mongoose";
 
 import { Brand, BrandSchema } from "src/api/brands/entities/brand.entity";
 import { Category, CategorySchema } from "src/api/categories/entities/category.entity";
+import {
+  ProductVariant,
+  ProductVariantSchema,
+} from "src/api/products/entities/product-variant.entity";
+import { Product, ProductSchema } from "src/api/products/entities/product.entity";
 import { User, UserSchema } from "src/api/users/entities/user.entitiy";
 
 import { ConfigService } from "./config.service";
@@ -20,6 +25,8 @@ import { ConfigService } from "./config.service";
       { name: User.name, schema: UserSchema },
       { name: Category.name, schema: CategorySchema },
       { name: Brand.name, schema: BrandSchema },
+      { name: ProductVariant.name, schema: ProductVariantSchema },
+      { name: Product.name, schema: ProductSchema },
     ]),
   ],
   exports: [MongooseModule],

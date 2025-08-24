@@ -1,0 +1,33 @@
+import { Types } from "mongoose";
+import z from "zod";
+
+export const createProductSchema = z.object({
+  name: z.string().min(3).trim(),
+  description: z.string().min(3).trim(),
+  variants: z.array(
+    z.object({
+      color: z.string().trim(),
+      price: z.number(),
+      quantity: z.number(),
+      image: z.url().optional(),
+      size: z.string().trim(),
+    }),
+  ),
+  category: z.array(
+    z
+      .string()
+      .refine((val) => Types.ObjectId.isValid(val), {
+        message: "Invalid ObjectId",
+      })
+      .transform((val) => new Types.ObjectId(val)),
+  ),
+  brand: z
+    .string()
+    .refine((val) => Types.ObjectId.isValid(val), {
+      message: "Invalid ObjectId",
+    })
+    .transform((val) => new Types.ObjectId(val)),
+  image: z.url(),
+});
+
+export type CreateProductDto = z.infer<typeof createProductSchema>;
