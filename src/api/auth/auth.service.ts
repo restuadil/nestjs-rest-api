@@ -10,7 +10,7 @@ import { JwtService } from "@nestjs/jwt";
 import { InjectModel } from "@nestjs/mongoose";
 
 import * as bcrypt from "bcrypt";
-import { Model } from "mongoose";
+import { Model, Types } from "mongoose";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 import { Logger } from "winston";
 
@@ -22,7 +22,9 @@ import { JwtPayload } from "src/types/jwt.type";
 import { ActivateDto } from "./dto/auth-activate.dto";
 import { LoginDto } from "./dto/auth-login.dto";
 import { RegisterDto } from "./dto/auth-register.dto";
+import { ChangePasswordDto } from "./dto/change-password.dto";
 import { User } from "../users/entities/user.entitiy";
+import { UsersService } from "../users/users.service";
 
 @Injectable()
 export class AuthService {
@@ -33,6 +35,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly redisService: RedisService,
     private readonly configService: ConfigService,
+    private readonly userService: UsersService,
   ) {}
 
   private async existingUsernameOrEmail(username: string, email: string): Promise<User | null> {
@@ -126,8 +129,7 @@ export class AuthService {
   async me(me: JwtPayload): Promise<User> {
     this.logger.info(`Get Me...`);
 
-    const user = await this.userModel.findById(me.id);
-    if (!user) throw new NotFoundException("User not found");
+    const user = await this.userService.findOne(new Types.ObjectId(me.id));
 
     return user;
   }
@@ -165,5 +167,22 @@ export class AuthService {
     });
 
     await this.redisService.delete(`refreshToken:${id}`);
+  }
+
+  async changePassword(id: Types.ObjectId, changePassword: ChangePasswordDto): Promise<User> {
+    this.logger.info(`Resetting password...`);
+
+    const { password, newPassword } = changePassword;
+
+    const user = await this.userService.findOne(id);
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) throw new NotFoundException("User not found");
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    await user.save();
+
+    return user;
   }
 }

@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Inject, Post, Query, Res } from "@nestjs/common";
 
 import { Response } from "express";
+import { Types } from "mongoose";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 import { Logger } from "winston";
 
@@ -15,6 +16,7 @@ import { AuthService } from "./auth.service";
 import { ActivateDto, activateSchema } from "./dto/auth-activate.dto";
 import { LoginDto, loginSchema } from "./dto/auth-login.dto";
 import { RegisterDto, registerSchema } from "./dto/auth-register.dto";
+import { ChangePasswordDto, changePasswordSchema } from "./dto/change-password.dto";
 import { User } from "../users/entities/user.entitiy";
 
 @Controller("auth")
@@ -113,5 +115,17 @@ export class AuthController {
 
     res.clearCookie("refreshToken");
     return { message: "User logged out successfully", data: null };
+  }
+
+  @Post("change-password")
+  async changePassword(
+    @Body(new ZodPipe(changePasswordSchema)) changePassword: ChangePasswordDto,
+    @Me() me: JwtPayload,
+  ): Promise<ControllerResponse<User>> {
+    this.logger.info(`Auth Controller - changePassword`);
+
+    const result = await this.authService.changePassword(new Types.ObjectId(me.id), changePassword);
+
+    return { message: "Password changed successfully", data: result };
   }
 }
