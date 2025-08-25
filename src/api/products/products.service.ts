@@ -168,7 +168,6 @@ export class ProductsService {
     return product;
   }
 
-  // TODO implement update
   async update(id: Types.ObjectId, updateProductDto: UpdateProductDto): Promise<Product> {
     this.logger.info(`Updating product...`);
 
