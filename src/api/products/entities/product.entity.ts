@@ -19,6 +19,7 @@ import { ProductVariant } from "./product-variant.entity";
   },
 })
 export class Product extends Document {
+  [x: string]: any;
   @Prop({ unique: true, required: true, type: String })
   name: string;
 

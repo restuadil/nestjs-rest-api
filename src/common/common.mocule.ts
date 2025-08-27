@@ -9,12 +9,13 @@ import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { LoggerInterceptor } from "./interceptors/logger.interceptor";
 import { MailModule } from "./mail/mail.module";
 import { MailService } from "./mail/mail.service";
+import { QueueModule } from "./queue/queue.module";
 import { RedisModule } from "./redis/redis.module";
 import { RedisService } from "./redis/redis.service";
 
 @Global()
 @Module({
-  imports: [RedisModule, MailModule, DatabaseModule],
+  imports: [RedisModule, MailModule, DatabaseModule, QueueModule],
   providers: [
     ConfigService,
     {
@@ -32,6 +33,6 @@ import { RedisService } from "./redis/redis.service";
     RedisService,
     MailService,
   ],
-  exports: [ConfigService, RedisService, MailService],
+  exports: [ConfigService, RedisService, MailService, QueueModule],
 })
 export class CommonModule {}

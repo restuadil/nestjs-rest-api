@@ -1,3 +1,4 @@
+import { InjectQueue } from "@nestjs/bullmq";
 import {
   ConflictException,
   Inject,
@@ -7,6 +8,7 @@ import {
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 
+import { Queue } from "bullmq";
 import { FilterQuery, Model, Types } from "mongoose";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 import { Logger } from "winston";
@@ -29,6 +31,7 @@ export class ProductsService {
     @InjectModel(Product.name) private readonly productModel: Model<Product>,
     @InjectModel(ProductVariant.name) private readonly productVariantModel: Model<ProductVariant>,
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
+    @InjectQueue(Product.name) private readonly productQueue: Queue,
     private readonly redisService: RedisService,
     private readonly configService: ConfigService,
   ) {}
@@ -65,6 +68,7 @@ export class ProductsService {
     if (!Product) throw new InternalServerErrorException("Failed to create product");
 
     await this.redisService.deleteByPattern("product:*");
+    await this.productQueue.add("productCreated", { product: Product });
 
     return Product;
   }
