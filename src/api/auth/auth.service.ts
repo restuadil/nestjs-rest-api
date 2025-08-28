@@ -17,7 +17,7 @@ import { Logger } from "winston";
 import { MailService } from "src/common/mail/mail.service";
 import { RedisService } from "src/common/redis/redis.service";
 import { ConfigService } from "src/config/config.service";
-import { JwtPayload } from "src/types/jwt.type";
+import { UserPayload } from "src/types/jwt.type";
 
 import { ActivateDto } from "./dto/auth-activate.dto";
 import { LoginDto } from "./dto/auth-login.dto";
@@ -38,14 +38,14 @@ export class AuthService {
     private readonly userService: UsersService,
   ) {}
 
-  private async existingUsernameOrEmail(username: string, email: string): Promise<User | null> {
-    const existingUsernameOrEmail = await this.userModel.find({
+  private async findUserByUsernameOrEmail(username: string, email: string): Promise<User | null> {
+    const findUserByUsernameOrEmail = await this.userModel.find({
       $or: [{ username }, { email }],
     });
-    return existingUsernameOrEmail.length ? existingUsernameOrEmail[0] : null;
+    return findUserByUsernameOrEmail.length ? findUserByUsernameOrEmail[0] : null;
   }
 
-  private async generateTokens(payload: JwtPayload) {
+  private generateTokens(payload: UserPayload) {
     const accessToken = this.jwtService.sign(payload, {
       expiresIn: this.configService.get<number>("JWT_ACCESS_EXPIRATION_TIME"),
     });
@@ -53,12 +53,16 @@ export class AuthService {
       secret: this.configService.get<string>("JWT_REFRESH_SECRET"),
       expiresIn: this.configService.get<number>("JWT_REFRESH_EXPIRATION_TIME"),
     });
-    await this.redisService.set(
-      `refreshToken:${payload.id}`,
-      refreshToken,
-      this.configService.get<number>("JWT_REFRESH_EXPIRATION_TIME"),
-    );
+
     return { accessToken, refreshToken };
+  }
+
+  private hash(password: string): Promise<string> {
+    return bcrypt.hash(password, this.configService.get<number>("SALT") || 10);
+  }
+
+  private compare(password: string, hashedPassword: string): Promise<boolean> {
+    return bcrypt.compare(password, hashedPassword);
   }
 
   async register(registerDto: RegisterDto): Promise<User> {
@@ -66,12 +70,12 @@ export class AuthService {
 
     const { email, password, username, roles } = registerDto;
 
-    const existingUsernameOrEmail = await this.existingUsernameOrEmail(username, email);
-    if (existingUsernameOrEmail) throw new ConflictException("User already exists");
+    const findUserByUsernameOrEmail = await this.findUserByUsernameOrEmail(username, email);
+    if (findUserByUsernameOrEmail) throw new ConflictException("User already exists");
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await this.hash(password);
     const isActive = false;
-    const activationCode = await bcrypt.hash(username + email, 10);
+    const activationCode = await this.hash(username + email);
 
     const user = await this.userModel.create({
       username,
@@ -97,18 +101,18 @@ export class AuthService {
 
     const { identifier, password } = loginDto;
 
-    const user = await this.existingUsernameOrEmail(identifier, identifier);
+    const user = await this.findUserByUsernameOrEmail(identifier, identifier);
     if (!user) throw new NotFoundException("User not found");
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await this.compare(password, user.password);
     if (!isPasswordValid) throw new NotFoundException("User not found");
     if (user && !user.isActive) throw new ForbiddenException("Please activate your account");
-    const payload: JwtPayload = {
+    const payload: UserPayload = {
       id: user._id as string,
       username: user.username,
       email: user.email,
       roles: user.roles,
     };
-    const { accessToken, refreshToken } = await this.generateTokens(payload);
+    const { accessToken, refreshToken } = this.generateTokens(payload);
 
     return { accessToken, refreshToken };
   }
@@ -126,7 +130,7 @@ export class AuthService {
     return user;
   }
 
-  async me(me: JwtPayload): Promise<User> {
+  async me(me: UserPayload): Promise<User> {
     this.logger.info(`Get Me...`);
 
     const user = await this.userService.findOne(new Types.ObjectId(me.id));
@@ -140,7 +144,7 @@ export class AuthService {
   }> {
     this.logger.info(`Refreshing token...`);
 
-    const { id, username, email, roles }: JwtPayload = this.jwtService.verify(oldRefreshToken, {
+    const { id, username, email, roles }: UserPayload = this.jwtService.verify(oldRefreshToken, {
       secret: this.configService.get<string>("JWT_REFRESH_SECRET"),
     });
 
@@ -148,21 +152,26 @@ export class AuthService {
     if (!savedToken || savedToken !== oldRefreshToken)
       throw new NotFoundException("Token not found");
 
-    const payload: JwtPayload = {
+    const payload: UserPayload = {
       id,
       username,
       email,
       roles,
     };
 
-    const { accessToken, refreshToken } = await this.generateTokens(payload);
+    const { accessToken, refreshToken } = this.generateTokens(payload);
+
+    await this.redisService.set(
+      `refreshToken:${payload.id}`,
+      refreshToken,
+      this.configService.get<number>("JWT_REFRESH_EXPIRATION_TIME"),
+    );
     return { accessToken, refreshToken };
   }
 
   async logout(refreshToken: string): Promise<void> {
     this.logger.info(`Logging out user...`);
-    this.logger.debug(`refreshToken: ${refreshToken}`);
-    const { id }: JwtPayload = this.jwtService.verify(refreshToken, {
+    const { id }: UserPayload = this.jwtService.verify(refreshToken, {
       secret: this.configService.get<string>("JWT_REFRESH_SECRET"),
     });
 
@@ -176,10 +185,10 @@ export class AuthService {
 
     const user = await this.userService.findOne(id);
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await this.compare(password, user.password);
     if (!isPasswordValid) throw new NotFoundException("User not found");
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const hashedPassword = await this.hash(newPassword);
     user.password = hashedPassword;
     await user.save();
 
