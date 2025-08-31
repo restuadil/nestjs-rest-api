@@ -4,8 +4,7 @@ import { Document, Types } from "mongoose";
 
 import { Brand } from "src/api/brands/entities/brand.entity";
 import { Category } from "src/api/categories/entities/category.entity";
-
-import { ProductVariant } from "./product-variant.entity";
+import { ProductVariant } from "src/api/product-variant/entities/product-variant.entity";
 
 @Schema({
   timestamps: true,
@@ -19,7 +18,6 @@ import { ProductVariant } from "./product-variant.entity";
   },
 })
 export class Product extends Document {
-  [x: string]: any;
   @Prop({ unique: true, required: true, type: String })
   name: string;
 

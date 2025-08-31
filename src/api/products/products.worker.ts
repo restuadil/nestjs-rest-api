@@ -22,7 +22,7 @@ export class ProductProcessor extends WorkerHost {
   async process(job: Job<{ product: Product }>): Promise<void> {
     switch (job.name) {
       case "productCreated":
-        return this.productCreated(job);
+        return await this.productCreated(job);
       default:
         return Promise.resolve();
     }
