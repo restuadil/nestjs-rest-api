@@ -5,6 +5,8 @@ import { getModelToken } from "@nestjs/mongoose";
 import { faker } from "@faker-js/faker";
 import { Model, Types } from "mongoose";
 
+import { User } from "src/api/users/entities/user.entitiy";
+
 import { Brand } from "../api/brands/entities/brand.entity";
 import { Category } from "../api/categories/entities/category.entity";
 import { ProductVariant } from "../api/product-variant/entities/product-variant.entity";
@@ -19,15 +21,30 @@ async function bootstrap() {
   const brandModel = app.get<Model<Brand>>(getModelToken(Brand.name));
   const productModel = app.get<Model<Product>>(getModelToken(Product.name));
   const variantModel = app.get<Model<ProductVariant>>(getModelToken(ProductVariant.name));
-  console.log("🌳 Seeding data...");
+  const userModel = app.get<Model<User>>(getModelToken(User.name));
   // Clear old data
   await Promise.all([
     categoryModel.deleteMany({}),
     brandModel.deleteMany({}),
     productModel.deleteMany({}),
     variantModel.deleteMany({}),
+    userModel.deleteMany({}),
   ]);
   console.log("🌳 Data cleared");
+  console.log("🌳 Seeding data...");
+
+  const users: Partial<User>[] = Array.from({ length: 1000 }).map((_, i) => {
+    const username = faker.internet.username() + `-${i + 1}`;
+    return {
+      username,
+      email: username + "@gmail.com",
+      password: faker.internet.password(),
+      activationCode: faker.internet.password(),
+    };
+  });
+
+  const createdUsers = await userModel.insertMany(users);
+  console.log(`✅ Seeded ${createdUsers.length} users`);
   // -------- Seed Categories --------
   const categories: Partial<Category>[] = Array.from({ length: 1000 }).map((_, i) => {
     const name = faker.commerce.department() + `-${i + 1}`;
@@ -60,7 +77,10 @@ async function bootstrap() {
   for (let i = 0; i < 3000; i++) {
     const name = faker.commerce.productName() + `-${i + 1}`;
     const brand = faker.helpers.arrayElement(createdBrands);
-    const category = faker.helpers.arrayElement(createdCategories);
+    const randomCategories = faker.helpers.arrayElements(
+      createdCategories,
+      faker.number.int({ min: 1, max: 5 }),
+    );
 
     const product: Partial<Product> = {
       name,
@@ -68,7 +88,7 @@ async function bootstrap() {
       description: faker.commerce.productDescription(),
       image: faker.image.urlLoremFlickr({ category: "product" }),
       brandId: brand._id as Types.ObjectId,
-      categoryIds: [category._id as Types.ObjectId],
+      categoryIds: randomCategories.map((c) => c._id as Types.ObjectId),
       variantIds: [],
     };
 

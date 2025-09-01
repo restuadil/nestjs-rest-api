@@ -32,6 +32,10 @@ export class ProductProcessor extends WorkerHost {
     this.logger.info(`Processing job ${job.id} of type ${job.name}`);
     const users = await this.userSesrvice.findAllRaws();
     const { product } = job.data;
+
+    const totalUsers = users.length;
+    let processed = 0;
+
     for (const user of users) {
       await this.mailService.sendMail({
         to: user.email,
@@ -39,6 +43,17 @@ export class ProductProcessor extends WorkerHost {
         html: `<h1>Produk Baru Tersedia! : ${product.name}</h1>`,
         text: `Produk Baru Tersedia!`,
       });
+
+      processed++;
+      const progress = Math.round((processed / totalUsers) * 100);
+
+      await job.updateProgress(progress);
+
+      if (progress % 10 === 0 || processed === totalUsers) {
+        this.logger.info(`📨 Email progress: ${progress}% (${processed}/${totalUsers})`);
+      }
     }
+
+    this.logger.info(`✅ Finished sending productCreated emails for ${product.name}`);
   }
 }

@@ -36,7 +36,7 @@ export class Product extends Document {
   @Prop({ required: true, type: [Types.ObjectId], ref: Category.name })
   categoryIds: Types.ObjectId[];
 
-  @Prop({ required: true, type: Types.ObjectId, ref: Brand.name })
+  @Prop({ type: Types.ObjectId, ref: Brand.name, default: null })
   brandId: Types.ObjectId;
 
   readonly createdAt?: Date;

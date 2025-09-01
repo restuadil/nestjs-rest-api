@@ -1,6 +1,8 @@
 import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
 
+import { Brand } from "src/api/brands/entities/brand.entity";
+import { Category } from "src/api/categories/entities/category.entity";
 import { Product } from "src/api/products/entities/product.entity";
 import { ConfigService } from "src/config/config.service";
 
@@ -16,10 +18,18 @@ import { ConfigService } from "src/config/config.service";
         },
       }),
     }),
-    BullModule.registerQueue({
-      name: Product.name,
-    }),
+    BullModule.registerQueue(
+      {
+        name: Product.name,
+      },
+      {
+        name: Category.name,
+      },
+      {
+        name: Brand.name,
+      },
+    ),
   ],
   exports: [BullModule],
 })
-export class QueueModule {}
+export class JobModule {}

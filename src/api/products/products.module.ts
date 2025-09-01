@@ -1,6 +1,6 @@
-import { forwardRef, Module } from "@nestjs/common";
+import { Module } from "@nestjs/common";
 
-import { QueueModule } from "src/common/queue/queue.module";
+import { JobModule } from "src/common/job/job.module";
 import { DatabaseModule } from "src/config/database.module";
 
 import { ProductsController } from "./products.controller";
@@ -10,7 +10,7 @@ import { ProductVariantModule } from "../product-variant/product-variants.module
 import { UsersModule } from "../users/users.module";
 
 @Module({
-  imports: [DatabaseModule, QueueModule, UsersModule, forwardRef(() => ProductVariantModule)],
+  imports: [DatabaseModule, JobModule, UsersModule, ProductVariantModule],
   controllers: [ProductsController],
   providers: [ProductsService, ProductProcessor],
   exports: [ProductsService],
