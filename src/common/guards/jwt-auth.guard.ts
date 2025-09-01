@@ -8,7 +8,7 @@ import {
 import { Reflector } from "@nestjs/core";
 import { AuthGuard } from "@nestjs/passport";
 
-import { JwtPayload } from "src/types/jwt.type";
+import { UserPayload } from "src/types/jwt.type";
 import { Role } from "src/types/role.type";
 
 import { IS_PUBLIC_KEY } from "../decortators/public.decorator";
@@ -30,7 +30,7 @@ export class JwtAuthGuard extends AuthGuard("jwt") {
     return super.canActivate(context);
   }
 
-  handleRequest<TUser = JwtPayload>(
+  handleRequest<TUser = UserPayload>(
     err: any,
     user: any,
     info: any,
@@ -48,7 +48,7 @@ export class JwtAuthGuard extends AuthGuard("jwt") {
 
     if (requiredRoles.length > 0) {
       const hasRole = requiredRoles.some((role) =>
-        (user as JwtPayload).roles?.includes(role as Role),
+        (user as UserPayload).roles?.includes(role as Role),
       );
       if (!hasRole) {
         throw new ForbiddenException("You do not have permission for this resource");

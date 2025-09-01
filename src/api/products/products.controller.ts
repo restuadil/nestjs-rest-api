@@ -60,8 +60,6 @@ export class ProductsController {
     return { message: "Product fetched successfully", data: result };
   }
 
-  // TODO implement update
-  // only can update name and description
   @Put(":id")
   @Roles(Role.ADMIN)
   async update(

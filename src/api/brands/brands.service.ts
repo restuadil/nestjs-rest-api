@@ -1,3 +1,4 @@
+import { InjectQueue } from "@nestjs/bullmq";
 import {
   ConflictException,
   Inject,
@@ -7,6 +8,7 @@ import {
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 
+import { Queue } from "bullmq";
 import { FilterQuery, Model, Types } from "mongoose";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 import { Logger } from "winston";
@@ -25,6 +27,7 @@ import { Brand } from "./entities/brand.entity";
 export class BrandsService {
   constructor(
     @InjectModel(Brand.name) private readonly brandModel: Model<Brand>,
+    @InjectQueue(Brand.name) private readonly brandQueue: Queue,
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
     private readonly redisService: RedisService,
     private readonly configService: ConfigService,
@@ -131,6 +134,8 @@ export class BrandsService {
     if (!deletedBrand) throw new NotFoundException("Brand not found");
 
     await this.redisService.deleteByPattern("brand:*");
+    await this.redisService.deleteByPattern("product:*");
+    await this.brandQueue.add("brandDeleted", { brand: deletedBrand });
 
     return deletedBrand;
   }

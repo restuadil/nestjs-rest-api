@@ -18,7 +18,8 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "prepare": "husky"
+    "prepare": "husky",
+    "seed": "npx ts-node -r tsconfig-paths/register src/seed/seeder.ts "
   },
   "lint-staged": {
     "*.{ts,js,json,md}": [
@@ -27,7 +28,9 @@
     ]
   },
   "dependencies": {
+    "@faker-js/faker": "^10.0.0",
     "@nest-lab/throttler-storage-redis": "^1.1.0",
+    "@nestjs/bullmq": "^11.0.3",
     "@nestjs/cache-manager": "^3.0.1",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
@@ -41,6 +44,7 @@
     "@nestjs/schedule": "^6.0.0",
     "@nestjs/throttler": "^6.4.0",
     "bcrypt": "^6.0.0",
+    "bullmq": "^5.58.1",
     "cache-manager": "^7.1.1",
     "cookie-parser": "^1.4.7",
     "helmet": "^8.1.0",

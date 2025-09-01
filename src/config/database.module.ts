@@ -6,7 +6,7 @@ import { Category, CategorySchema } from "src/api/categories/entities/category.e
 import {
   ProductVariant,
   ProductVariantSchema,
-} from "src/api/products/entities/product-variant.entity";
+} from "src/api/product-variant/entities/product-variant.entity";
 import { Product, ProductSchema } from "src/api/products/entities/product.entity";
 import { User, UserSchema } from "src/api/users/entities/user.entitiy";
 

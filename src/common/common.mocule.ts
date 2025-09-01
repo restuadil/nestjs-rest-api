@@ -7,6 +7,7 @@ import { DatabaseModule } from "src/config/database.module";
 import { GlobalFilter } from "./filters/global.filter";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { LoggerInterceptor } from "./interceptors/logger.interceptor";
+import { JobModule } from "./job/job.module";
 import { MailModule } from "./mail/mail.module";
 import { MailService } from "./mail/mail.service";
 import { RedisModule } from "./redis/redis.module";
@@ -14,7 +15,7 @@ import { RedisService } from "./redis/redis.service";
 
 @Global()
 @Module({
-  imports: [RedisModule, MailModule, DatabaseModule],
+  imports: [RedisModule, MailModule, DatabaseModule, JobModule],
   providers: [
     ConfigService,
     {
@@ -32,6 +33,6 @@ import { RedisService } from "./redis/redis.service";
     RedisService,
     MailService,
   ],
-  exports: [ConfigService, RedisService, MailService],
+  exports: [ConfigService, RedisService, MailService, JobModule],
 })
 export class CommonModule {}

@@ -1,3 +1,4 @@
+import { InjectQueue } from "@nestjs/bullmq";
 import {
   ConflictException,
   Inject,
@@ -5,9 +6,11 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from "@nestjs/common";
-import { InjectModel } from "@nestjs/mongoose";
+import { InjectConnection, InjectModel } from "@nestjs/mongoose";
 
+import { Queue } from "bullmq";
 import { FilterQuery, Model, Types } from "mongoose";
+import { Connection } from "mongoose";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 import { Logger } from "winston";
 
@@ -20,15 +23,23 @@ import { Meta, PaginationResponse } from "src/types/web.type";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { QueryProductDto, QueryResponseProduct } from "./dto/query-product.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
-import { ProductVariant } from "./entities/product-variant.entity";
 import { Product } from "./entities/product.entity";
+import { BrandsService } from "../brands/brands.service";
+import { CategoriesService } from "../categories/categories.service";
+import { ProductVariant } from "../product-variant/entities/product-variant.entity";
+import { ProductVariantService } from "../product-variant/product-variants.service";
 
 @Injectable()
 export class ProductsService {
   constructor(
     @InjectModel(Product.name) private readonly productModel: Model<Product>,
     @InjectModel(ProductVariant.name) private readonly productVariantModel: Model<ProductVariant>,
+    @InjectQueue(Product.name) private readonly productQueue: Queue,
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
+    @InjectConnection() private readonly connection: Connection,
+    private readonly productVariantService: ProductVariantService,
+    private readonly brandService: BrandsService,
+    private readonly categoryService: CategoriesService,
     private readonly redisService: RedisService,
     private readonly configService: ConfigService,
   ) {}
@@ -39,34 +50,43 @@ export class ProductsService {
 
   async create(createProductDto: CreateProductDto): Promise<Product> {
     this.logger.info(`Creating product...`);
+    const connection = await this.connection.startSession();
+    connection.startTransaction();
 
-    const { name, brand, category, description, image, variants } = createProductDto;
-    const slug = generateSlug(name);
+    try {
+      const { name, brandId, categoryIds, description, image, variants } = createProductDto;
+      const slug = generateSlug(name);
 
-    const existingProductNameOrSlug = await this.getProductByNameOrSlug(name, slug);
-    if (existingProductNameOrSlug) throw new ConflictException("Product already exists");
+      await this.categoryService.findMany(categoryIds);
+      await this.brandService.findOne(brandId);
 
-    const variantsProduct = await Promise.all(
-      variants.map((variant) => this.productVariantModel.create(variant)),
-    );
-    if (!variantsProduct)
-      throw new InternalServerErrorException("Failed to create product variant");
+      const existingProductNameOrSlug = await this.getProductByNameOrSlug(name, slug);
+      if (existingProductNameOrSlug) throw new ConflictException("Product already exists");
 
-    const variantProductIds = variantsProduct.map((variant) => variant._id);
-    const Product = await this.productModel.create({
-      name,
-      slug,
-      description,
-      image,
-      brandId: brand,
-      categoryIds: category,
-      variantIds: variantProductIds,
-    });
-    if (!Product) throw new InternalServerErrorException("Failed to create product");
+      const variantsProduct = await this.productVariantService.createMany(variants);
 
-    await this.redisService.deleteByPattern("product:*");
+      const Product = await this.productModel.create({
+        name,
+        slug,
+        description,
+        image,
+        brandId,
+        categoryIds,
+        variantIds: variantsProduct.map((variant) => variant._id),
+      });
+      if (!Product) throw new InternalServerErrorException("Failed to create product");
 
-    return Product;
+      await this.redisService.deleteByPattern("product:*");
+      await this.productQueue.add("productCreated", { product: Product });
+
+      await connection.commitTransaction();
+      void connection.endSession();
+      return Product;
+    } catch (error) {
+      await connection.abortTransaction();
+      void connection.endSession();
+      throw error;
+    }
   }
 
   async findAll(
@@ -168,7 +188,6 @@ export class ProductsService {
     return product;
   }
 
-  // TODO implement update
   async update(id: Types.ObjectId, updateProductDto: UpdateProductDto): Promise<Product> {
     this.logger.info(`Updating product...`);
 
@@ -185,12 +204,29 @@ export class ProductsService {
 
   async remove(id: Types.ObjectId): Promise<Product> {
     this.logger.info(`Deleting product...`);
+    const session = await this.connection.startSession();
+    session.startTransaction();
 
-    const deletedProduct = await this.productModel.findByIdAndDelete(id);
-    if (!deletedProduct) throw new NotFoundException("Product not found");
+    try {
+      const deletedProduct = await this.productModel.findByIdAndDelete(id, { session });
+      if (!deletedProduct) throw new NotFoundException("Product not found");
+      await this.productVariantModel.deleteMany(
+        { _id: deletedProduct.variantIds.map((variant) => variant._id) },
+        { session },
+      );
 
-    await this.redisService.deleteByPattern("product:*");
+      if (!deletedProduct) throw new NotFoundException("Product not found");
+      this.logger.info(deletedProduct);
 
-    return deletedProduct;
+      await session.commitTransaction();
+      void session.endSession();
+
+      await this.redisService.deleteByPattern("product:*");
+      return deletedProduct;
+    } catch (error) {
+      await session.abortTransaction();
+      void session.endSession();
+      throw error;
+    }
   }
 }

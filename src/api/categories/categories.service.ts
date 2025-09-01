@@ -1,3 +1,4 @@
+import { InjectQueue } from "@nestjs/bullmq";
 import {
   ConflictException,
   Inject,
@@ -7,6 +8,7 @@ import {
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 
+import { Queue } from "bullmq";
 import { FilterQuery, Model, Types } from "mongoose";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 import { Logger } from "winston";
@@ -27,6 +29,7 @@ export class CategoriesService {
   constructor(
     @InjectModel(Category.name) private readonly categoryModel: Model<Category>,
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
+    @InjectQueue(Category.name) private readonly categoryQueue: Queue,
     private readonly redisService: RedisService,
     private readonly configService: ConfigService,
   ) {}
@@ -104,6 +107,18 @@ export class CategoriesService {
     return category;
   }
 
+  async findMany(ids: Types.ObjectId[]): Promise<Category[]> {
+    this.logger.info(`Get categories by ids...`);
+    const categories = await this.categoryModel
+      .find({ _id: { $in: ids } })
+      .lean()
+      .exec();
+    if (categories.length !== ids.length) {
+      throw new NotFoundException("Some categories not found");
+    }
+    return categories;
+  }
+
   async update(id: Types.ObjectId, updateCategoryDto: UpdateCategoryDto): Promise<Category> {
     this.logger.info(`Updating category...`);
 
@@ -137,6 +152,8 @@ export class CategoriesService {
     if (!deletedCategory) throw new NotFoundException("Category not found");
 
     await this.redisService.deleteByPattern("category:*");
+    await this.redisService.deleteByPattern("product:*");
+    await this.categoryQueue.add("categoryDeleted", { category: deletedCategory });
 
     return deletedCategory;
   }

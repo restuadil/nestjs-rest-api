@@ -9,7 +9,7 @@ import { Cookie } from "src/common/decortators/cookie.decorator";
 import { Me } from "src/common/decortators/me.decorator";
 import { Public } from "src/common/decortators/public.decorator";
 import { ZodPipe } from "src/common/pipe/zod.pipe";
-import { JwtPayload } from "src/types/jwt.type";
+import { UserPayload } from "src/types/jwt.type";
 import { ControllerResponse } from "src/types/web.type";
 
 import { AuthService } from "./auth.service";
@@ -70,7 +70,7 @@ export class AuthController {
   }
 
   @Get("me")
-  async me(@Me() me: JwtPayload): Promise<ControllerResponse<User>> {
+  async me(@Me() me: UserPayload): Promise<ControllerResponse<User>> {
     this.logger.info(`Auth Controller - me`);
 
     const result = await this.authService.me(me);
@@ -120,7 +120,7 @@ export class AuthController {
   @Post("change-password")
   async changePassword(
     @Body(new ZodPipe(changePasswordSchema)) changePassword: ChangePasswordDto,
-    @Me() me: JwtPayload,
+    @Me() me: UserPayload,
   ): Promise<ControllerResponse<User>> {
     this.logger.info(`Auth Controller - changePassword`);
 

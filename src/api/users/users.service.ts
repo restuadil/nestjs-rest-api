@@ -69,4 +69,8 @@ export class UsersService {
 
     return { data, meta };
   }
+
+  async findAllRaws(): Promise<User[]> {
+    return this.userModel.find().lean().exec();
+  }
 }

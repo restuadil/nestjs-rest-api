@@ -1,4 +1,4 @@
-import { JwtPayload } from "./jwt.type";
+import { UserPayload } from "./jwt.type";
 
 export interface ControllerResponse<T> {
   message: string;
@@ -32,5 +32,5 @@ export interface Meta {
 
 export interface AuthRequest {
   cookies: Record<string, string>;
-  user: JwtPayload;
+  user: UserPayload;
 }

@@ -1,6 +1,6 @@
 import { Role } from "./role.type";
 
-export interface JwtPayload {
+export interface UserPayload {
   id: string;
   username: string;
   email: string;

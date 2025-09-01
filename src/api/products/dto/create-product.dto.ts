@@ -1,19 +1,13 @@
 import { Types } from "mongoose";
 import z from "zod";
 
+import { createProductVariantSchema } from "src/api/product-variant/dto/create-product-variant.dto";
+
 export const createProductSchema = z.object({
   name: z.string().min(3).trim(),
   description: z.string().min(3).trim(),
-  variants: z.array(
-    z.object({
-      color: z.string().trim(),
-      price: z.number(),
-      quantity: z.number(),
-      image: z.url().optional(),
-      size: z.string().trim(),
-    }),
-  ),
-  category: z.array(
+  variants: z.array(createProductVariantSchema),
+  categoryIds: z.array(
     z
       .string()
       .refine((val) => Types.ObjectId.isValid(val), {
@@ -21,7 +15,7 @@ export const createProductSchema = z.object({
       })
       .transform((val) => new Types.ObjectId(val)),
   ),
-  brand: z
+  brandId: z
     .string()
     .refine((val) => Types.ObjectId.isValid(val), {
       message: "Invalid ObjectId",
