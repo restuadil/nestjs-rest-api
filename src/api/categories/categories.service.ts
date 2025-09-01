@@ -107,6 +107,18 @@ export class CategoriesService {
     return category;
   }
 
+  async findMany(ids: Types.ObjectId[]): Promise<Category[]> {
+    this.logger.info(`Get categories by ids...`);
+    const categories = await this.categoryModel
+      .find({ _id: { $in: ids } })
+      .lean()
+      .exec();
+    if (categories.length !== ids.length) {
+      throw new NotFoundException("Some categories not found");
+    }
+    return categories;
+  }
+
   async update(id: Types.ObjectId, updateCategoryDto: UpdateCategoryDto): Promise<Category> {
     this.logger.info(`Updating category...`);
 

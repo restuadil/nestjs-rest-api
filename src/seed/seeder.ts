@@ -15,6 +15,11 @@ import { AppModule } from "../app.module";
 import { generateSlug } from "../common/helpers/generate-slug";
 
 async function bootstrap() {
+  const development = process.env.NODE_ENV === "development";
+  if (!development) {
+    console.error("❌ Seed script can only be run in development mode");
+    process.exit(1);
+  }
   const app = await NestFactory.createApplicationContext(AppModule);
 
   const categoryModel = app.get<Model<Category>>(getModelToken(Category.name));
@@ -33,11 +38,11 @@ async function bootstrap() {
   console.log("🌳 Data cleared");
   console.log("🌳 Seeding data...");
 
-  const users: Partial<User>[] = Array.from({ length: 1000 }).map((_, i) => {
+  const users: Partial<User>[] = Array.from({ length: 100 }).map((_, i) => {
     const username = faker.internet.username() + `-${i + 1}`;
     return {
       username,
-      email: username + "@gmail.com",
+      email: username + "@yopmail.com",
       password: faker.internet.password(),
       activationCode: faker.internet.password(),
     };

@@ -16,6 +16,16 @@ import { ConfigService } from "src/config/config.service";
           port: configService.get<number>("REDIS_PORT"),
           password: configService.get<string>("REDIS_PASSWORD"),
         },
+        defaultJobOptions: {
+          attempts: 3,
+          delay: 10000,
+          removeOnComplete: true,
+          removeOnFail: false,
+          backoff: {
+            type: "exponential",
+            delay: 10000,
+          },
+        },
       }),
     }),
     BullModule.registerQueue(

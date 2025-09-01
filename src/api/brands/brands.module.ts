@@ -11,5 +11,6 @@ import { BrandsService } from "./brands.service";
   imports: [DatabaseModule, JobModule],
   controllers: [BrandsController],
   providers: [BrandsService, BrandProcessor],
+  exports: [BrandsService],
 })
 export class BrandsModule {}

@@ -24,6 +24,8 @@ import { CreateProductDto } from "./dto/create-product.dto";
 import { QueryProductDto, QueryResponseProduct } from "./dto/query-product.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
 import { Product } from "./entities/product.entity";
+import { BrandsService } from "../brands/brands.service";
+import { CategoriesService } from "../categories/categories.service";
 import { ProductVariant } from "../product-variant/entities/product-variant.entity";
 import { ProductVariantService } from "../product-variant/product-variants.service";
 
@@ -34,10 +36,12 @@ export class ProductsService {
     @InjectModel(ProductVariant.name) private readonly productVariantModel: Model<ProductVariant>,
     @InjectQueue(Product.name) private readonly productQueue: Queue,
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
+    @InjectConnection() private readonly connection: Connection,
     private readonly productVariantService: ProductVariantService,
+    private readonly brandService: BrandsService,
+    private readonly categoryService: CategoriesService,
     private readonly redisService: RedisService,
     private readonly configService: ConfigService,
-    @InjectConnection() private readonly connection: Connection,
   ) {}
 
   private async getProductByNameOrSlug(name: string, slug: string): Promise<Product | null> {
@@ -52,6 +56,9 @@ export class ProductsService {
     try {
       const { name, brandId, categoryIds, description, image, variants } = createProductDto;
       const slug = generateSlug(name);
+
+      await this.categoryService.findMany(categoryIds);
+      await this.brandService.findOne(brandId);
 
       const existingProductNameOrSlug = await this.getProductByNameOrSlug(name, slug);
       if (existingProductNameOrSlug) throw new ConflictException("Product already exists");

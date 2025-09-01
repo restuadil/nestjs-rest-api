@@ -11,5 +11,6 @@ import { CategoryProcessor } from "./category.worker";
   imports: [DatabaseModule, JobModule],
   controllers: [CategoriesController],
   providers: [CategoriesService, CategoryProcessor],
+  exports: [CategoriesService],
 })
 export class CategoriesModule {}
